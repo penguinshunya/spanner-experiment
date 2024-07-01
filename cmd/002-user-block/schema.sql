@@ -1,0 +1,24 @@
+CREATE TABLE Users(
+  UserID STRING(MAX) NOT NULL,
+) PRIMARY KEY(UserID);
+
+CREATE TABLE Blocks(
+  UserID STRING(MAX) NOT NULL,
+  BlockedUserID STRING(MAX) NOT NULL,
+  CONSTRAINT FK_Blocks_Users FOREIGN KEY(BlockedUserID) REFERENCES Users(UserID),
+) PRIMARY KEY(UserID, BlockedUserID),
+  INTERLEAVE IN PARENT Users;
+
+CREATE TABLE Comments(
+  UserID STRING(MAX) NOT NULL,
+  CommentID STRING(MAX) NOT NULL,
+  SendingUserID STRING(MAX) NOT NULL,
+  Content STRING(MAX) NOT NULL,
+  CreateTime TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
+  CONSTRAINT FK_Comments_Users FOREIGN KEY(SendingUserID) REFERENCES Users(UserID),
+) PRIMARY KEY(UserID, CommentID),
+  INTERLEAVE IN PARENT Users;
+
+CREATE INDEX IDX_Comments_UserID_CreateTime_DESC
+ON Comments(UserID, CreateTime DESC) STORING (SendingUserID, Content),
+INTERLEAVE IN Users;

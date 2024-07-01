@@ -1,0 +1,39 @@
+spanner> EXPLAIN
+      -> SELECT c.SendingUserID, c.Content, c.CreateTime
+      -> FROM Comments AS c
+      -> WHERE c.UserID = ""
+      -> AND NOT EXISTS(SELECT 1 FROM Blocks AS b WHERE c.UserID = b.UserID AND c.SendingUserID = b.BlockedUserID)
+      -> AND NOT EXISTS(SELECT 1 FROM Blocks AS b WHERE c.UserID = b.BlockedUserID AND c.SendingUserID = b.UserID)
+      -> ORDER BY c.CreateTime DESC
+      -> LIMIT 10;
++-----+---------------------------------------------------------------------------------------------------------+
+| ID  | Query_Execution_Plan                                                                                    |
++-----+---------------------------------------------------------------------------------------------------------+
+|  *0 | Distributed Union (distribution_table: Users, split_ranges_aligned: true)                               |
+|   1 | +- Serialize Result                                                                                     |
+|   2 |    +- Global Limit                                                                                      |
+|  *3 |       +- Distributed Anti Semi Apply (order_preserving: true)                                           |
+|   4 |          +- [Input] Create Batch                                                                        |
+|   5 |          |  +- Local Distributed Union                                                                  |
+|   6 |          |     +- Compute Struct                                                                        |
+|   7 |          |        +- Anti-Semi Apply                                                                    |
+|   8 |          |           +- [Input] Filter Scan                                                             |
+|  *9 |          |           |  +- Index Scan (Index: IDX_Comments_UserID_CreateTime_DESC, scan_method: Scalar) |
+|  18 |          |           +- [Map] Local Distributed Union                                                   |
+|  19 |          |              +- Filter Scan (seekable_key_size: 2)                                           |
+| *20 |          |                 +- Table Scan (Table: Blocks, scan_method: Scalar)                           |
+|  35 |          +- [Map] Semi Apply                                                                            |
+|  36 |             +- [Input] KeyRangeAccumulator                                                              |
+|  37 |             |  +- Batch Scan (Batch: $v2, scan_method: Scalar)                                          |
+|  42 |             +- [Map] Local Distributed Union                                                            |
+|  43 |                +- Filter Scan (seekable_key_size: 2)                                                    |
+| *44 |                   +- Table Scan (Table: Blocks, scan_method: Scalar)                                    |
++-----+---------------------------------------------------------------------------------------------------------+
+Predicates(identified by ID):
+  0: Split Range: ($UserID = '')
+  3: Split Range: (($BlockedUserID_1 = '') AND ($UserID_2 = $SendingUserID))
+  9: Seek Condition: ($UserID = '')
+ 20: Seek Condition: ($UserID_1 = '') AND ($BlockedUserID = $SendingUserID)
+ 44: Seek Condition: ($UserID_2 = $batched_SendingUserID) AND ($BlockedUserID_1 = '')
+
+1 rows in set (0.05 sec)

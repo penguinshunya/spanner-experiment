@@ -1,0 +1,3 @@
+export GCP_PROJECT_ID=
+export SPANNER_INSTANCE=
+export SPANNER_DATABASE=

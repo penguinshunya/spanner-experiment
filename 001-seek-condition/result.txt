@@ -1,0 +1,21 @@
+spanner> EXPLAIN ANALYZE SELECT * FROM Users WHERE UserID <= "5";
++----+----------------------------------------------------------------------------+---------------+------------+---------------+
+| ID | Query_Execution_Plan                                                       | Rows_Returned | Executions | Total_Latency |
++----+----------------------------------------------------------------------------+---------------+------------+---------------+
+| *0 | Distributed Union (distribution_table: Users, split_ranges_aligned: false) | 31200         | 1          | 23.95 msecs   |
+|  1 | +- Local Distributed Union                                                 | 31200         | 1          | 20.93 msecs   |
+|  2 |    +- Serialize Result                                                     | 31200         | 1          | 19.47 msecs   |
+|  3 |       +- Filter Scan (seekable_key_size: 1)                                | 31200         | 1          | 15.17 msecs   |
+| *4 |          +- Table Scan (Table: Users, scan_method: Scalar)                 | 31200         | 1          | 11.51 msecs   |
++----+----------------------------------------------------------------------------+---------------+------------+---------------+
+Predicates(identified by ID):
+ 0: Split Range: ($UserID <= '5')
+ 4: Seek Condition: ($UserID <= '5')
+
+31200 rows in set (30.96 msecs)
+timestamp:            2024-07-01T23:06:27.998156+09:00
+cpu time:             30.93 msecs
+rows scanned:         31200 rows
+deleted rows scanned: 0 rows
+optimizer version:    6
+optimizer statistics: auto_20240701_13_47_02UTC
